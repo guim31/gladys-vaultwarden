@@ -91,6 +91,7 @@ export class VaultwardenHub {
     this.error = null;
     this.read = false;
     this.downSince = null;
+    this.offlineAnnounced = false;
     /** Account counts of the last admin reading, or null. */
     this.admin = null;
     this.adminError = null;
@@ -176,6 +177,7 @@ export class VaultwardenHub {
         this.server = { ...emptyServer(), latest };
         this.read = false;
         this.downSince = null;
+        this.offlineAnnounced = false;
         this.announced = undefined;
       }
       this.published.clear();
@@ -255,11 +257,15 @@ export class VaultwardenHub {
     if (!client) {
       await this.publishDevices();
       await this.publishConnectionStatus();
+      this.refreshWidget();
       return;
     }
     const stale = () => client !== this.client || this.stopped;
     let reading = null;
     let failure = null;
+    // GitHub in parallel: a blackholed api.github.com must not delay the
+    // reading of the server, nor its events, by its timeout.
+    const latest = this.readLatest();
     try {
       reading = await client.readServer();
     } catch (err) {
@@ -268,14 +274,8 @@ export class VaultwardenHub {
       }
       failure = err;
     }
-    if (stale()) {
-      return;
-    }
-    const admin = reading ? await this.readAdmin(client, { force: forceAdmin }) : null;
-    if (stale()) {
-      return;
-    }
-    await this.readLatest();
+    const admin = reading && !stale() ? await this.readAdmin(client, { force: forceAdmin }) : null;
+    await latest;
     if (stale()) {
       return;
     }
@@ -308,7 +308,7 @@ export class VaultwardenHub {
     }
   }
 
-  /** The latest release on GitHub, when due. Never blocks the reading. */
+  /** The latest release on GitHub, when due. Never throws. */
   async readLatest() {
     if (!this.config.checkUpdates) {
       return;
@@ -344,11 +344,14 @@ export class VaultwardenHub {
       this.server.reachable = true;
       this.server.responseMs = reading.responseMs;
       this.server.version = reading.version;
-      if (this.read && before.reachable === false) {
+      // Back after an announced outage only: a server down since the start
+      // never had its server_offline.
+      if (this.offlineAnnounced) {
         const downtime = this.downSince === null ? 0 : Math.round((now - this.downSince) / 60_000);
         events.push([TRIGGERS.ONLINE, { downtime_minutes: downtime }]);
       }
       this.downSince = null;
+      this.offlineAnnounced = false;
     } else {
       const wasError = this.error?.kind;
       this.error = { kind: failure.kind, message: failure.message };
@@ -364,6 +367,7 @@ export class VaultwardenHub {
       }
       if (this.read && before.reachable === true) {
         events.push([TRIGGERS.OFFLINE, {}]);
+        this.offlineAnnounced = true;
       }
     }
 
@@ -575,7 +579,9 @@ export class VaultwardenHub {
     if (this.error) {
       return { connected: false, message: this.errorMessage() };
     }
-    if (this.adminError) {
+    // A refused token or a disabled admin page needs the user; a rate limit or
+    // a failed read clears by itself (logs, report and widget tell it).
+    if (this.adminError && ADMIN_BLOCKING.has(this.adminError.kind)) {
       return { connected: false, message: ERROR_TEXT[this.adminError.kind] };
     }
     return { connected: true };

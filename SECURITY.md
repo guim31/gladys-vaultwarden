@@ -42,7 +42,9 @@ the latest activity date: no e-mail address, no name, no key. A refused token
 is not tried again before the configuration changes. The update check sends
 one anonymous request to the GitHub API every 6 hours. The "Accept a
 self-signed certificate" option turns off the certificate check for the
-Vaultwarden server only, never for GitHub.
+Vaultwarden server only, never for GitHub; with it, or on a plain `http://`
+address, the admin token travels to an unverified server or in clear: the
+documentation recommends https.
 
 Out of scope: Gladys Assistant itself (see its
 [security policy](https://github.com/GladysAssistant/Gladys/security/policy)),

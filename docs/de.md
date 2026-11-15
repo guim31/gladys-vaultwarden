@@ -67,7 +67,7 @@ Passwörter nie, sie werden auf deinen Geräten verschlüsselt.
 Ein abgelehnter Token wird erst wieder versucht, wenn du die Konfiguration
 änderst oder **Verbindung testen** drückst: Ein Werkzeug wie fail2ban
 überwacht diese Anmeldungen oft. Gladys bewahrt den Token wie jedes geheime
-Feld auf und schreibt ihn nie in die Protokolle.
+Feld auf und schreibt ihn nie in die Protokolle. Über eine `http://`-Adresse und mit **Selbstsigniertes Zertifikat akzeptieren** reist er ungeschützt oder zu einem nicht geprüften Server: Nimm lieber https oder beschränke das auf ein Netz, dem du vertraust.
 
 ## Die Geräte
 
@@ -107,7 +107,7 @@ installierenden Version; und mit dem Admin-Token die Konten. Seine Einstellung
 - **Vaultwarden wird unerreichbar**: Der Server antwortet nicht mehr auf seine
   Zustandsprüfung, nachdem er geantwortet hat. Variablen: der Servername, die
   installierte Version.
-- **Vaultwarden ist wieder erreichbar**: Der Server antwortet wieder.
+- **Vaultwarden ist wieder erreichbar**: Der Server antwortet wieder, nach **Vaultwarden wird unerreichbar** (ein Server, der beim Start der Integration schon aus ist, löst keinen der beiden aus).
   Variablen: der Servername, die installierte Version, die Ausfallzeit in
   Minuten.
 - **Ein Vaultwarden-Update ist verfügbar**: Eine neuere Version als die
@@ -134,11 +134,9 @@ installierenden Version; und mit dem Admin-Token die Konten. Seine Einstellung
   der Unterpfad fehlt.
 - **„Zertifikat abgelehnt“**: Wenn das Zertifikat deines ist, aktiviere
   **Selbstsigniertes Zertifikat akzeptieren**.
-- **„Admin-Token abgelehnt“**: Gib den Token im Klartext ein, nicht seinen
-  Argon2-Hash.
+- **„Admin-Token abgelehnt“**: Gib den Token im Klartext ein, nicht seinen Argon2-Hash. Mit `DISABLE_ADMIN_TOKEN` hat der Server keinen Token zu prüfen: Lass das Feld leer.
 - **„Die Admin-Seite von Vaultwarden ist deaktiviert“**: Der Server hat kein
-  `ADMIN_TOKEN`, oder `DISABLE_ADMIN_TOKEN` versteckt sie hinter einem Proxy:
-  Lass den Token leer.
+  `ADMIN_TOKEN`: Lass den Token leer.
 - **„Zu viele Admin-Anmeldungen“**: Vaultwarden begrenzt die Anmeldungen an der
   Admin-Seite (`ADMIN_RATELIMIT_*`); die Integration versucht es 5 Minuten
   später erneut.

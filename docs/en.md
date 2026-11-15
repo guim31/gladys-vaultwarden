@@ -64,8 +64,7 @@ devices.
 
 A refused token is not tried again until you change the configuration or
 press **Test the connection**: a tool like fail2ban often watches these
-logins. The token is kept by Gladys like every secret field and never written
-in the logs.
+logins. The token is kept by Gladys like every secret field and never written in the logs. On a plain `http://` address, and with **Accept a self-signed certificate**, it travels unprotected or to an unverified server: prefer https, or keep it to a network you trust.
 
 ## The devices
 
@@ -104,7 +103,7 @@ rows.
 - **Vaultwarden becomes unreachable**: the server stops answering its health
   check, after answering before. Variables: the server name, the running
   version.
-- **Vaultwarden is reachable again**: the server answers again. Variables: the
+- **Vaultwarden is reachable again**: the server answers again, after **Vaultwarden becomes unreachable** (a server already down when the integration starts fires neither). Variables: the
   server name, the running version, the downtime in minutes.
 - **A Vaultwarden update is available**: a release newer than the running
   version appears on GitHub, once per release. Variables: the server name, the
@@ -128,10 +127,9 @@ rows.
   service (a reverse proxy page, another port) or misses the sub-path.
 - **"Certificate refused"**: if the certificate is yours, turn on **Accept a
   self-signed certificate**.
-- **"Admin token refused"**: type the token in clear, not its Argon2 hash.
+- **"Admin token refused"**: type the token in clear, not its Argon2 hash. With `DISABLE_ADMIN_TOKEN`, the server has no token to check: leave the field empty.
 - **"The admin page of Vaultwarden is disabled"**: the server has no
-  `ADMIN_TOKEN`, or `DISABLE_ADMIN_TOKEN` hides it behind a proxy: leave the
-  token empty.
+  `ADMIN_TOKEN`: leave the token empty.
 - **"Too many admin logins"**: Vaultwarden limits the logins to the admin page
   (`ADMIN_RATELIMIT_*`); the integration tries again 5 minutes later.
 

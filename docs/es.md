@@ -68,7 +68,7 @@ las contraseñas, cifradas en sus dispositivos.
 Un token rechazado no se vuelve a probar hasta que cambie la configuración o
 pulse **Probar la conexión**: una herramienta como fail2ban suele vigilar
 estos inicios de sesión. Gladys guarda el token como cualquier campo secreto y
-nunca lo escribe en los registros.
+nunca lo escribe en los registros. Con una dirección `http://`, y con **Aceptar un certificado autofirmado**, viaja sin protección o hacia un servidor no verificado: prefiera https, o resérvelo a una red de confianza.
 
 ## Los dispositivos
 
@@ -108,7 +108,7 @@ que instalar; y, con el token de administración, las cuentas. Su ajuste
 - **Vaultwarden deja de estar accesible**: el servidor deja de responder a su
   control de estado, tras haber respondido. Variables: el nombre del servidor,
   la versión instalada.
-- **Vaultwarden vuelve a estar accesible**: el servidor vuelve a responder.
+- **Vaultwarden vuelve a estar accesible**: el servidor vuelve a responder, tras **Vaultwarden deja de estar accesible** (un servidor ya detenido al iniciarse la integración no activa ninguno de los dos).
   Variables: el nombre del servidor, la versión instalada, el tiempo de
   inactividad en minutos.
 - **Hay una actualización de Vaultwarden disponible**: aparece en GitHub una
@@ -135,11 +135,9 @@ que instalar; y, con el token de administración, las cuentas. Su ajuste
   subruta.
 - **«Certificado rechazado»**: si el certificado es suyo, active **Aceptar un
   certificado autofirmado**.
-- **«Token de administración rechazado»**: escriba el token en claro, no su
-  hash Argon2.
+- **«Token de administración rechazado»**: escriba el token en claro, no su hash Argon2. Con `DISABLE_ADMIN_TOKEN`, el servidor no tiene ningún token que comprobar: deje el campo vacío.
 - **«La página de administración de Vaultwarden está desactivada»**: el
-  servidor no tiene `ADMIN_TOKEN`, o `DISABLE_ADMIN_TOKEN` la oculta tras un
-  proxy: deje el token vacío.
+  servidor no tiene `ADMIN_TOKEN`: deje el token vacío.
 - **«Demasiados inicios de sesión de administración»**: Vaultwarden limita los
   inicios de sesión en la página de administración (`ADMIN_RATELIMIT_*`); la
   integración vuelve a intentarlo 5 minutos después.

@@ -270,6 +270,8 @@ Vérifié contre l'image réelle `vaultwarden/server` 1.37.5 sous Docker le 15/1
   appareil connecté (désactiver un compte supprime ses appareils). Pas de route JSON des organisations
   (`/admin/organizations/overview` est du HTML) : on compte les `organizations[].id` distincts des
   comptes. La liste contient des clés chiffrées des comptes : n'en garder que des nombres.
+- Avec `DISABLE_ADMIN_TOKEN=true` : `POST /admin` répond 401 (aucun jeton à vérifier) et `/admin/users`
+  est ouvert sans cookie. L'intégration ne s'en sert pas : pas de jeton, pas de statistiques.
 - `/admin/users/<id>/disable` exige `content-type: application/json` (404 sinon) — utile pour fabriquer
   des fixtures.
 - Inscription sans client Bitwarden (fixtures) : `POST /identity/accounts/register/send-verification-email`

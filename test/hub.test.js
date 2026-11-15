@@ -99,7 +99,7 @@ test('the server going down and back fires its events, with the downtime', async
   assert.ok(w.fake.widgetRefreshes.includes(WIDGET_KEY));
 });
 
-test('a server down at start publishes the device as unreachable, without event', async (t) => {
+test('a server down at start publishes the device as unreachable, without any event', async (t) => {
   const w = await createWorld({ connect: false });
   t.after(() => w.app.stop());
   w.server.online = false;
@@ -110,8 +110,9 @@ test('a server down at start publishes the device as unreachable, without event'
   assert.equal(state(w, FEATURE_KEYS.VERSION), undefined, 'no version known yet');
   w.server.online = true;
   await w.hub.poll();
-  assert.equal(events(w, TRIGGERS.ONLINE).length, 1, 'it was seen down');
-  assert.equal(events(w, TRIGGERS.OFFLINE).length, 0);
+  // No server_offline was sent: no server_online either.
+  assert.deepEqual(w.fake.sceneEvents, []);
+  assert.equal(state(w, FEATURE_KEYS.REACHABLE), 1);
 });
 
 test('a new release fires update_available once, not the release known at start', async (t) => {
@@ -149,6 +150,14 @@ test('a new release fires update_available once, not the release known at start'
     events(w, TRIGGERS.UPDATE).map((event) => event.data.latest_version),
     ['1.38.0', '1.38.1'],
   );
+});
+
+test('GitHub is read without the self-signed option, even when it is on', async (t) => {
+  const w = await createWorld({ config: { ...CONFIG, url: 'https://192.0.2.10', insecure: true } });
+  t.after(() => w.app.stop());
+  const github = w.server.requests.find((request) => request.url === GITHUB_LATEST_URL);
+  assert.ok(github);
+  assert.notEqual(github.options.insecure, true);
 });
 
 test('GitHub out of reach: the server is still watched, retried after an hour', async (t) => {
@@ -238,7 +247,10 @@ test('a rate-limited admin login is tried again at the next admin reading', asyn
   w.server.rateLimited = true;
   await w.gladys.connect();
   await w.app.ready;
-  assert.match(w.fake.connectionStatus.message.en, /Too many admin logins/);
+  // Transient: the integration stays connected, the report tells it.
+  assert.equal(w.fake.connectionStatus.connected, true);
+  const ack = await w.fake.action('test_connection', {});
+  assert.match(ack.data.message.en, /Too many admin logins/);
   w.server.rateLimited = false;
   w.clock.advance(5 * 60_000);
   await w.hub.poll();

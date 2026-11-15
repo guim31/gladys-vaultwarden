@@ -71,7 +71,7 @@ elle-même ne voit jamais les mots de passe, chiffrés sur vos appareils.
 Un jeton refusé n'est plus essayé avant que vous changiez la configuration ou
 appuyiez sur **Tester la connexion** : un outil comme fail2ban surveille
 souvent ces connexions. Le jeton est conservé par Gladys comme tout champ
-secret et n'est jamais écrit dans les logs.
+secret et n'est jamais écrit dans les logs. Sur une adresse `http://`, et avec **Accepter un certificat auto-signé**, il circule sans protection ou vers un serveur non vérifié : préférez https, ou réservez-le à un réseau de confiance.
 
 ## Les appareils
 
@@ -111,7 +111,7 @@ masque les lignes des comptes.
 - **Vaultwarden devient injoignable** : le serveur ne répond plus à son
   contrôle de santé, alors qu'il répondait. Variables : le nom du serveur, la
   version installée.
-- **Vaultwarden est de nouveau joignable** : le serveur répond de nouveau.
+- **Vaultwarden est de nouveau joignable** : le serveur répond de nouveau, après **Vaultwarden devient injoignable** (un serveur déjà arrêté au démarrage de l'intégration ne déclenche ni l'un ni l'autre).
   Variables : le nom du serveur, la version installée, la durée
   d'indisponibilité en minutes.
 - **Une mise à jour de Vaultwarden est disponible** : une version plus récente
@@ -138,11 +138,9 @@ masque les lignes des comptes.
   sous-chemin.
 - **« Certificat refusé »** : si le certificat est le vôtre, activez
   **Accepter un certificat auto-signé**.
-- **« Jeton d'administration refusé »** : saisissez le jeton en clair, pas son
-  empreinte Argon2.
+- **« Jeton d'administration refusé »** : saisissez le jeton en clair, pas son empreinte Argon2. Avec `DISABLE_ADMIN_TOKEN`, le serveur n'a aucun jeton à vérifier : laissez le champ vide.
 - **« La page d'administration de Vaultwarden est désactivée »** : le serveur
-  n'a pas d'`ADMIN_TOKEN`, ou `DISABLE_ADMIN_TOKEN` la cache derrière un proxy
-  : laissez le jeton vide.
+  n'a pas d'`ADMIN_TOKEN` : laissez le jeton vide.
 - **« Trop de connexions d'administration »** : Vaultwarden limite les
   connexions à la page d'administration (`ADMIN_RATELIMIT_*`) ; l'intégration
   réessaie 5 minutes plus tard.

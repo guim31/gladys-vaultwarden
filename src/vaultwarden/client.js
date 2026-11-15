@@ -196,9 +196,24 @@ export function createClient({ url, adminToken = '', insecure = false, now }, re
     return body;
   }
 
+  /** An admin request: a network error there is an admin failure, /alive just answered. */
+  async function callAdmin(path, options) {
+    try {
+      return await call(path, options);
+    } catch (err) {
+      throw new VaultwardenError(
+        ADMIN_ERROR_KINDS.FAILED,
+        `admin request failed (${err.message})`,
+        {
+          cause: err,
+        },
+      );
+    }
+  }
+
   async function login() {
     session = null;
-    const response = await call('/admin', { method: 'POST', form: { token: adminToken } });
+    const response = await callAdmin('/admin', { method: 'POST', form: { token: adminToken } });
     const { status } = response;
     if (status === 401 || status === 403) {
       throw new VaultwardenError(ADMIN_ERROR_KINDS.AUTH, 'admin token refused', { status });
@@ -225,7 +240,7 @@ export function createClient({ url, adminToken = '', insecure = false, now }, re
   }
 
   async function getUsers() {
-    const response = await call('/admin/users', { headers: { cookie: session.cookie } });
+    const response = await callAdmin('/admin/users', { headers: { cookie: session.cookie } });
     return response;
   }
 
