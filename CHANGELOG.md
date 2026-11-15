@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-15
+
 ### Added
 
 - Your self-hosted Vaultwarden server in Gladys, watched from outside: no
@@ -28,3 +30,6 @@ the notes of the version's GitHub Release.
   and update, accounts (can be hidden).
 - A "Test the connection" action, and the documentation in English, French,
   German and Spanish.
+
+[Unreleased]: https://github.com/guim31/gladys-vaultwarden/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/guim31/gladys-vaultwarden/releases/tag/v1.0.0
