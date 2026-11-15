@@ -1,77 +1,86 @@
+// -----------------------------------------------------------------------------
+// The `server` widget: its content follows the vocabulary and the budget of
+// the core (validateWidgetContent), in every language and state.
+// -----------------------------------------------------------------------------
+
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateWidgetContent } from '@gladysassistant/integration-sdk';
-import { createFakeGladys } from '@gladysassistant/integration-sdk/testing';
-import { buildDiscoveredDevices } from '../src/devices/index.js';
-import { simulateLanSession } from '../src/devices/plug.js';
-import { DEMO_STATUS_WIDGET, WIDGETS, refreshWidgets } from '../src/widgets.js';
-import { normalizeConfig } from '../src/config.js';
+import { WIDGET_KEY } from '../src/hub.js';
+import { CONFIG, PUBLIC_CONFIG, createAll, createWorld } from './helpers/world.js';
 
-const gladys = createFakeGladys();
-const config = normalizeConfig();
-const demoStatus = WIDGETS[DEMO_STATUS_WIDGET];
+async function content(world, request = {}) {
+  const ack = await world.fake.widgetGet(WIDGET_KEY, { settings: {}, ...request });
+  assert.equal(ack.success, true, ack.error);
+  const { content: result } = ack.data;
+  validateWidgetContent(result);
+  return result;
+}
 
-// What the SDK passes to onWidgetGet, plus the config index.js adds.
-const getContent = (cfg = config) =>
-  demoStatus.get(gladys, { settings: {}, language: 'en', units: 'metric', config: cfg });
+const rows = (result) => result.components[0].items;
 
-test('the demo_status content is rendered exactly as sent', async () => {
-  // [] = nothing the core would drop, truncate or trim to the content budget.
-  assert.deepEqual(validateWidgetContent(await getContent()), []);
-});
-
-test('the degraded plug connection content is valid too', async () => {
-  simulateLanSession(false);
-  try {
-    const content = await getContent();
-    assert.deepEqual(validateWidgetContent(content), []);
-    const status = content.components.find((component) => component.type === 'status');
-    assert.ok(
-      status.items.some((item) => item.color === 'warning'),
-      'degraded shows a warning',
-    );
-  } finally {
-    simulateLanSession(true);
+test('the widget lists the server, the version and the accounts', async (t) => {
+  const w = await createWorld();
+  t.after(() => w.app.stop());
+  for (const language of ['en', 'fr', 'de', 'es']) {
+    const result = await content(w, { language });
+    assert.equal(result.components.length, 1);
+    assert.equal(rows(result).length, 7, language);
   }
-});
-
-test('the live tiles reference features the integration publishes', async () => {
-  const featureIds = new Set(
-    buildDiscoveredDevices(gladys, config).flatMap((device) =>
-      device.features.map((feature) => feature.external_id),
-    ),
-  );
-  const liveTiles = (await getContent()).components.filter((c) => c.device_feature);
-  assert.ok(liveTiles.length > 0, 'the template demonstrates a device-bound tile');
-  for (const tile of liveTiles) {
-    assert.ok(featureIds.has(tile.device_feature), `unknown feature ${tile.device_feature}`);
-  }
-});
-
-test('every button action of the content is handled and answers a short toast', async () => {
-  const buttons = (await getContent()).components.filter((c) => c.type === 'button' && c.action);
-  assert.ok(buttons.length > 0, 'the template demonstrates a widget action');
-  for (const { action } of buttons) {
-    const message = await demoStatus.action(gladys, {
-      actionKey: action.key,
-      params: action.params ?? {},
-      settings: {},
-      config,
-    });
-    assert.ok(message.en, 'the toast carries at least the mandatory `en` text');
-    assert.ok(message.en.length <= 200, 'toasts are capped at 200 characters');
-  }
-});
-
-test('an unknown widget action fails, so the user sees the error', async () => {
-  await assert.rejects(
-    demoStatus.action(gladys, { actionKey: 'unknown', params: {}, settings: {}, config }),
-    /Unknown widget action/,
+  const result = await content(w, { language: 'fr' });
+  assert.deepEqual(
+    // Intl separates with narrow no-break spaces.
+    rows(result).map((row) => [row.label, String(row.value).replace(/\s/gu, ' ')]),
+    [
+      ['Vaultwarden', 'Joignable · 0 ms'],
+      ['Version', '1.37.5 · à jour'],
+      ['Utilisateurs', '2'],
+      ['Organisations', '1'],
+      ['Invitations en attente', '2'],
+      ['Comptes désactivés', '1'],
+      ['Dernière activité', 'il y a 37 min'],
+    ],
   );
 });
 
-test('refreshWidgets nudges every widget', () => {
-  const fresh = createFakeGladys();
-  refreshWidgets(fresh);
-  assert.deepEqual(fresh.fake.widgetRefreshes, Object.keys(WIDGETS));
+test('the accounts can be hidden, and are absent without admin token', async (t) => {
+  const w = await createWorld();
+  t.after(() => w.app.stop());
+  assert.equal(rows(await content(w, { settings: { show_accounts: false } })).length, 2);
+  const p = await createWorld({ config: PUBLIC_CONFIG });
+  t.after(() => p.app.stop());
+  assert.equal(rows(await content(p)).length, 2);
+});
+
+test('an update and an unreachable server are shown in color', async (t) => {
+  const w = await createWorld({ serverOptions: { version: '1.36.0' } });
+  t.after(() => w.app.stop());
+  const [, version] = rows(await content(w));
+  assert.deepEqual(version, {
+    label: 'Update available',
+    icon: 'download',
+    value: '1.36.0 → 1.37.5',
+    color: 'warning',
+  });
+  w.server.online = false;
+  await w.hub.poll();
+  const [server] = rows(await content(w));
+  assert.equal(server.value, 'Unreachable');
+  assert.equal(server.color, 'danger');
+});
+
+test('the widget shows the name given in Gladys', async (t) => {
+  const w = await createWorld();
+  t.after(() => w.app.stop());
+  await createAll(w);
+  await w.fake.deviceUpdated({ ...w.fake.devices[0], name: 'Family vault' });
+  assert.equal(rows(await content(w))[0].label, 'Family vault');
+});
+
+test('without address: the configuration problem, as text', async (t) => {
+  const w = await createWorld({ config: { ...CONFIG, url: '' } });
+  t.after(() => w.app.stop());
+  const result = await content(w, { language: 'de' });
+  assert.equal(result.components[0].type, 'text');
+  assert.match(result.components[0].text, /Gib die Adresse/);
 });
