@@ -1,177 +1,472 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "Vaultwarden",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Watch your Vaultwarden server: availability, version, updates and accounts.",
+    "fr": "Surveillez votre serveur Vaultwarden : disponibilité, version, mises à jour et comptes.",
+    "de": "Überwache deinen Vaultwarden-Server: Erreichbarkeit, Version, Updates und Konten.",
+    "es": "Supervise su servidor Vaultwarden: disponibilidad, versión, actualizaciones y cuentas."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-vaultwarden:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-vaultwarden/main/cover.png",
+  "categories": ["servers"],
+  "transports": ["local"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Your Vaultwarden server",
+        "fr": "Votre serveur Vaultwarden",
+        "de": "Dein Vaultwarden-Server",
+        "es": "Su servidor Vaultwarden"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "Gladys watches the server from outside: health check, version, latest release. It never opens a vault and never reads a password.",
+        "fr": "Gladys surveille le serveur de l'extérieur : santé, version, dernière version publiée. Elle n'ouvre aucun coffre et ne lit aucun mot de passe.",
+        "de": "Gladys überwacht den Server von außen: Zustand, Version, neueste Veröffentlichung. Gladys öffnet keinen Tresor und liest kein Passwort.",
+        "es": "Gladys supervisa el servidor desde fuera: estado, versión, última versión publicada. No abre ninguna caja fuerte ni lee ninguna contraseña."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://github.com/guim31/gladys-vaultwarden/blob/main/docs/en.md",
+          "label": {
+            "en": "Setup guide",
+            "fr": "Guide d'installation",
+            "de": "Installationsanleitung",
+            "es": "Guía de instalación"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "url",
+      "type": "string",
+      "label": {
+        "en": "Vaultwarden address",
+        "fr": "Adresse de Vaultwarden",
+        "de": "Vaultwarden-Adresse",
+        "es": "Dirección de Vaultwarden"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
-    },
-    {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
-    },
-    {
-      "key": "unit",
-      "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
       "required": false,
-      "default": "celsius",
+      "placeholder": {
+        "en": "https://vault.example.com",
+        "fr": "https://vault.example.com",
+        "de": "https://vault.example.com",
+        "es": "https://vault.example.com"
+      },
+      "description": {
+        "en": "The address you open the web vault with: https://vault.example.com, or 192.168.1.20:8080 (http).",
+        "fr": "L'adresse avec laquelle vous ouvrez le coffre web : https://vault.example.com, ou 192.168.1.20:8080 (http).",
+        "de": "Die Adresse, mit der du den Web-Tresor öffnest: https://vault.example.com oder 192.168.1.20:8080 (http).",
+        "es": "La dirección con la que abre la caja fuerte web: https://vault.example.com, o 192.168.1.20:8080 (http)."
+      }
+    },
+    {
+      "key": "admin_token",
+      "type": "secret",
+      "label": {
+        "en": "Admin token (optional)",
+        "fr": "Jeton d'administration (facultatif)",
+        "de": "Admin-Token (optional)",
+        "es": "Token de administración (opcional)"
+      },
+      "required": false,
+      "description": {
+        "en": "The token of the /admin page, in clear (not its Argon2 hash). Adds the account counts. Leave empty to watch the server only.",
+        "fr": "Le jeton de la page /admin, en clair (pas son empreinte Argon2). Ajoute le décompte des comptes. Laissez vide pour ne surveiller que le serveur.",
+        "de": "Der Token der Seite /admin, im Klartext (nicht sein Argon2-Hash). Ergänzt die Kontenzahlen. Leer lassen, um nur den Server zu überwachen.",
+        "es": "El token de la página /admin, en claro (no su hash Argon2). Añade el recuento de cuentas. Déjelo vacío para supervisar solo el servidor."
+      }
+    },
+    {
+      "key": "insecure",
+      "type": "boolean",
+      "label": {
+        "en": "Accept a self-signed certificate",
+        "fr": "Accepter un certificat auto-signé",
+        "de": "Selbstsigniertes Zertifikat akzeptieren",
+        "es": "Aceptar un certificado autofirmado"
+      },
+      "description": {
+        "en": "Only for an https address whose certificate is not signed by a known authority.",
+        "fr": "Seulement pour une adresse https dont le certificat n'est pas signé par une autorité connue.",
+        "de": "Nur für eine https-Adresse, deren Zertifikat nicht von einer bekannten Stelle signiert ist.",
+        "es": "Solo para una dirección https cuyo certificado no está firmado por una autoridad conocida."
+      },
+      "required": false,
+      "default": false
+    },
+    {
+      "key": "check_updates",
+      "type": "boolean",
+      "label": {
+        "en": "Check for updates",
+        "fr": "Vérifier les mises à jour",
+        "de": "Nach Updates suchen",
+        "es": "Buscar actualizaciones"
+      },
+      "description": {
+        "en": "Compares the version with the latest release on GitHub, read every 6 hours.",
+        "fr": "Compare la version à la dernière publiée sur GitHub, lue toutes les 6 heures.",
+        "de": "Vergleicht die Version mit der neuesten Veröffentlichung auf GitHub, alle 6 Stunden gelesen.",
+        "es": "Compara la versión con la última publicada en GitHub, leída cada 6 horas."
+      },
+      "required": false,
+      "default": true
+    },
+    {
+      "key": "poll_interval",
+      "type": "select",
+      "label": {
+        "en": "Refresh interval",
+        "fr": "Intervalle de rafraîchissement",
+        "de": "Aktualisierungsintervall",
+        "es": "Intervalo de actualización"
+      },
+      "description": {
+        "en": "How often the server is checked: two small requests. The admin statistics are read every 5 minutes at most.",
+        "fr": "Fréquence de vérification du serveur : deux petites requêtes. Les statistiques d'administration sont lues toutes les 5 minutes au plus.",
+        "de": "Wie oft der Server geprüft wird: zwei kleine Anfragen. Die Admin-Statistiken werden höchstens alle 5 Minuten gelesen.",
+        "es": "Frecuencia de comprobación del servidor: dos pequeñas solicitudes. Las estadísticas de administración se leen como mucho cada 5 minutos."
+      },
+      "required": false,
+      "default": "60",
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        {
+          "value": "30",
+          "label": {
+            "en": "30 s",
+            "fr": "30 s",
+            "de": "30 s",
+            "es": "30 s"
+          }
+        },
+        {
+          "value": "60",
+          "label": {
+            "en": "1 min",
+            "fr": "1 min",
+            "de": "1 min",
+            "es": "1 min"
+          }
+        },
+        {
+          "value": "300",
+          "label": {
+            "en": "5 min",
+            "fr": "5 min",
+            "de": "5 min",
+            "es": "5 min"
+          }
+        },
+        {
+          "value": "900",
+          "label": {
+            "en": "15 min",
+            "fr": "15 min",
+            "de": "15 min",
+            "es": "15 min"
+          }
+        }
       ]
     },
     {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "key": "language",
+      "type": "select",
+      "label": {
+        "en": "Language of the names",
+        "fr": "Langue des noms",
+        "de": "Sprache der Namen",
+        "es": "Idioma de los nombres"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "Language of the feature names and of the dates, set when a device is added.",
+        "fr": "Langue des noms de fonctionnalités et des dates, fixée à l'ajout d'un appareil.",
+        "de": "Sprache der Funktionsnamen und der Daten, beim Hinzufügen eines Geräts festgelegt.",
+        "es": "Idioma de los nombres de las funciones y de las fechas, fijado al añadir un dispositivo."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
+      "key": "test_connection",
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar la conexión"
+      },
+      "description": {
+        "en": "Checks the server now, with the admin token if set, and shows the version and the accounts.",
+        "fr": "Vérifie le serveur maintenant, avec le jeton d'administration s'il est saisi, et affiche la version et les comptes.",
+        "de": "Prüft den Server jetzt, mit dem Admin-Token, falls gesetzt, und zeigt Version und Konten.",
+        "es": "Comprueba el servidor ahora, con el token de administración si lo hay, y muestra la versión y las cuentas."
+      },
       "timeout_seconds": 30
-    },
+    }
+  ],
+  "widgets": [
     {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
+      "key": "server",
+      "label": {
+        "en": "Vaultwarden",
+        "fr": "Vaultwarden",
+        "de": "Vaultwarden",
+        "es": "Vaultwarden"
+      },
+      "description": {
+        "en": "Server reachable or not, response time, version and update, accounts.",
+        "fr": "Serveur joignable ou non, temps de réponse, version et mise à jour, comptes.",
+        "de": "Server erreichbar oder nicht, Antwortzeit, Version und Update, Konten.",
+        "es": "Servidor accesible o no, tiempo de respuesta, versión y actualización, cuentas."
+      },
+      "icon": "shield",
+      "settings": [
         {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
+          "key": "show_accounts",
+          "type": "boolean",
+          "label": {
+            "en": "Show the accounts",
+            "fr": "Afficher les comptes",
+            "de": "Konten anzeigen",
+            "es": "Mostrar las cuentas"
+          },
+          "description": {
+            "en": "Users, organizations, invitations, disabled accounts and last activity (admin token only).",
+            "fr": "Utilisateurs, organisations, invitations, comptes désactivés et dernière activité (jeton d'administration seulement).",
+            "de": "Benutzer, Organisationen, Einladungen, deaktivierte Konten und letzte Aktivität (nur mit Admin-Token).",
+            "es": "Usuarios, organizaciones, invitaciones, cuentas desactivadas y última actividad (solo con token de administración)."
+          },
+          "required": false,
+          "default": true
         }
       ]
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "server_offline",
+      "label": {
+        "en": "Vaultwarden becomes unreachable",
+        "fr": "Vaultwarden devient injoignable",
+        "de": "Vaultwarden wird unerreichbar",
+        "es": "Vaultwarden deja de estar accesible"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "The server stops answering its health check (/alive), after answering before.",
+        "fr": "Le serveur ne répond plus à son contrôle de santé (/alive), alors qu'il répondait.",
+        "de": "Der Server antwortet nicht mehr auf seine Zustandsprüfung (/alive), nachdem er geantwortet hat.",
+        "es": "El servidor deja de responder a su control de estado (/alive), tras haber respondido."
       },
       "fields": [
         {
           "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
-        },
-        {
-          "key": "target",
           "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
-          "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
-          ]
+          "source": "devices",
+          "label": {
+            "en": "Server (empty: any)",
+            "fr": "Serveur (vide : n'importe lequel)",
+            "de": "Server (leer: beliebig)",
+            "es": "Servidor (vacío: cualquiera)"
+          }
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "server",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Server name",
+            "fr": "Nom du serveur",
+            "de": "Servername",
+            "es": "Nombre del servidor"
+          }
+        },
+        {
+          "key": "version",
+          "type": "string",
+          "label": {
+            "en": "Running version",
+            "fr": "Version installée",
+            "de": "Installierte Version",
+            "es": "Versión instalada"
+          }
         }
       ]
-    }
-  ],
-  "scene_actions": [
+    },
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "server_online",
+      "label": {
+        "en": "Vaultwarden is reachable again",
+        "fr": "Vaultwarden est de nouveau joignable",
+        "de": "Vaultwarden ist wieder erreichbar",
+        "es": "Vaultwarden vuelve a estar accesible"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "The server answers again after being unreachable.",
+        "fr": "Le serveur répond de nouveau après avoir été injoignable.",
+        "de": "Der Server antwortet wieder, nachdem er unerreichbar war.",
+        "es": "El servidor vuelve a responder tras haber estado inaccesible."
+      },
       "fields": [
         {
           "key": "device",
-          "type": "select",
+          "type": "multi_select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
+          "label": {
+            "en": "Server (empty: any)",
+            "fr": "Serveur (vide : n'importe lequel)",
+            "de": "Server (leer: beliebig)",
+            "es": "Servidor (vacío: cualquiera)"
+          }
         }
       ],
-      "outputs": [
+      "variables": [
         {
-          "key": "signalled",
-          "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "key": "server",
+          "type": "string",
+          "label": {
+            "en": "Server name",
+            "fr": "Nom du serveur",
+            "de": "Servername",
+            "es": "Nombre del servidor"
+          }
+        },
+        {
+          "key": "version",
+          "type": "string",
+          "label": {
+            "en": "Running version",
+            "fr": "Version installée",
+            "de": "Installierte Version",
+            "es": "Versión instalada"
+          }
+        },
+        {
+          "key": "downtime_minutes",
+          "type": "number",
+          "label": {
+            "en": "Downtime (minutes)",
+            "fr": "Durée d'indisponibilité (minutes)",
+            "de": "Ausfallzeit (Minuten)",
+            "es": "Tiempo de inactividad (minutos)"
+          }
         }
       ]
-    }
-  ],
-  "widgets": [
+    },
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "update_available",
+      "label": {
+        "en": "A Vaultwarden update is available",
+        "fr": "Une mise à jour de Vaultwarden est disponible",
+        "de": "Ein Vaultwarden-Update ist verfügbar",
+        "es": "Hay una actualización de Vaultwarden disponible"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "A release newer than the running version appears on GitHub. Once per release.",
+        "fr": "Une version plus récente que celle installée paraît sur GitHub. Une fois par version.",
+        "de": "Eine neuere Version als die installierte erscheint auf GitHub. Einmal pro Version.",
+        "es": "Aparece en GitHub una versión más reciente que la instalada. Una vez por versión."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "multi_select",
+          "source": "devices",
+          "label": {
+            "en": "Server (empty: any)",
+            "fr": "Serveur (vide : n'importe lequel)",
+            "de": "Server (leer: beliebig)",
+            "es": "Servidor (vacío: cualquiera)"
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "server",
+          "type": "string",
+          "label": {
+            "en": "Server name",
+            "fr": "Nom du serveur",
+            "de": "Servername",
+            "es": "Nombre del servidor"
+          }
+        },
+        {
+          "key": "version",
+          "type": "string",
+          "label": {
+            "en": "Running version",
+            "fr": "Version installée",
+            "de": "Installierte Version",
+            "es": "Versión instalada"
+          }
+        },
+        {
+          "key": "latest_version",
+          "type": "string",
+          "label": {
+            "en": "New version",
+            "fr": "Nouvelle version",
+            "de": "Neue Version",
+            "es": "Nueva versión"
+          }
+        },
+        {
+          "key": "release_url",
+          "type": "string",
+          "label": {
+            "en": "Release notes (link)",
+            "fr": "Notes de version (lien)",
+            "de": "Versionshinweise (Link)",
+            "es": "Notas de la versión (enlace)"
+          }
+        }
+      ]
     }
   ]
 }

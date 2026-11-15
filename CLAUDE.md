@@ -16,8 +16,8 @@ its only runtime dependency. It started from the official JavaScript template.
 ```bash
 npm install
 npm test                                  # node --test, the built-in runner
-node --test test/devices.test.js          # one file
-node --test --test-name-pattern "plug"    # tests whose name matches
+node --test test/hub.test.js              # one file
+node --test --test-name-pattern "admin"   # tests whose name matches
 npm run lint                              # ESLint
 npm run format:check                      # Prettier, as the CI runs it
 npm run format                            # Prettier, fix in place
@@ -31,16 +31,18 @@ pushing.
 ## Architecture
 
 ```
-index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
-src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+index.js                          SDK wiring only (src/app.js does the work)
+src/app.js                        registers every SDK handler on the hub; the tests use it too
+src/hub.js                        timer, readings, states, transports, scene events, status
+src/devices.js                    the "Vaultwarden" device: features, names, values
+src/vaultwarden/client.js         /alive, /api/version, admin login + /admin/users, GitHub release
+src/vaultwarden/http.js           node:http(s) request (JSON or form body, self-signed option)
+src/widgets.js                    dashboard widget `server`
+src/texts.js                      status, errors and report, in en/fr/de/es
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
-gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+gladys-assistant-integration.json manifest: name, config_schema, actions, widgets, triggers...
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (mandatory)
+test/                             node --test, against the SDK's fake Gladys and test/helpers/fakeVaultwarden.js
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -251,3 +253,28 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Docs `en`, `fr`, `de`, `es` avec les mêmes sections.
 - Chauffe, ouverture, sécurité : ne rien rendre pilotable « comme un thermostat » ou par un assistant
   vocal quand une erreur serait dangereuse (leçon d'OctoPrint).
+
+## Vaultwarden (propre à cette intégration)
+
+Vérifié contre l'image réelle `vaultwarden/server` 1.37.5 sous Docker le 15/11/2026.
+
+- `GET /alive` et `GET /api/version` répondent une **chaîne JSON** sans authentification (`"1.37.5"`).
+  `/api/config` donne la version de compatibilité Bitwarden (`2026.6.0`), pas celle de Vaultwarden.
+- L'API d'administration **n'accepte pas de Bearer** : `POST /admin` en formulaire `token=…` rend 200 et
+  un cookie `VW_ADMIN` (`Path=/admin`, `Max-Age` = `ADMIN_SESSION_LIFETIME`, 1200 s par défaut). Mauvais
+  jeton : 401 ; pas d'`ADMIN_TOKEN` : 404 sur toutes les routes `/admin` ; au-delà de
+  `ADMIN_RATELIMIT_MAX_BURST` (3 par 300 s) : 429. Un jeton refusé n'est **plus réessayé** avant un
+  changement de configuration ou « Tester la connexion » (fail2ban surveille souvent ces échecs).
+- `GET /admin/users` (JSON) : `_status` 1 = invité (pas encore de compte), `userEnabled: false` =
+  désactivé (le `_status` reste 0), `lastActive` au format `2026-11-15 01:22:34 +00:00`, `null` sans
+  appareil connecté (désactiver un compte supprime ses appareils). Pas de route JSON des organisations
+  (`/admin/organizations/overview` est du HTML) : on compte les `organizations[].id` distincts des
+  comptes. La liste contient des clés chiffrées des comptes : n'en garder que des nombres.
+- `/admin/users/<id>/disable` exige `content-type: application/json` (404 sinon) — utile pour fabriquer
+  des fixtures.
+- Inscription sans client Bitwarden (fixtures) : `POST /identity/accounts/register/send-verification-email`
+  rend un jeton quand l'envoi de courriel est coupé, puis `POST /identity/accounts/register/finish` avec
+  `emailVerificationToken`, des clés factices et `kdf: 0`.
+- Le conteneur refuse de démarrer sans volume : `I_REALLY_WANT_VOLATILE_STORAGE=true` pour un test.
+- L'événement `update_available` ne part pas au premier calcul (démarrage, autre serveur) : c'est la
+  référence, signalée par la fonctionnalité seule. Il part une fois par nouvelle version.

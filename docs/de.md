@@ -1,0 +1,160 @@
+# Vaultwarden
+
+Überwache deinen [Vaultwarden](https://github.com/dani-garcia/vaultwarden)-Server
+in Gladys: ein Gerät „Vaultwarden“ (erreichbar oder nicht, Antwortzeit,
+Version, Update verfügbar und neueste Version, und mit dem Admin-Token die
+Benutzer, Organisationen, offenen Einladungen, deaktivierten Konten und die
+letzte Aktivität), ein Dashboard-Widget und Szenen-Auslöser, wenn der Server
+unerreichbar wird, zurückkommt oder eine neue Version erscheint.
+
+Vaultwarden ist der schlanke, selbst gehostete Server, der mit den
+Bitwarden-Apps kompatibel ist. Diese Integration **überwacht den Server nur
+von außen**: keine Anmeldung bei einem Konto, kein geöffneter Tresor, kein
+gelesenes Passwort. Getestet wurde sie gegen ein echtes Vaultwarden 1.37.5 in
+Docker, mit und ohne Admin-Token, mit angelegten, eingeladenen und
+deaktivierten Konten und gestopptem Server. Rückmeldungen sind im
+[Gladys-Forum](https://community.gladysassistant.com) oder in den
+[Issues](https://github.com/guim31/gladys-vaultwarden/issues) willkommen.
+
+## Was du brauchst
+
+- Gladys Assistant 5.1.0 oder neuer.
+- Einen Vaultwarden-Server, den Gladys erreicht: die Adresse, mit der du den
+  Web-Tresor öffnest.
+- Optional: den Admin-Token des Servers (die Variable `ADMIN_TOKEN`, die die
+  Seite `/admin` öffnet) für die Kontenzahlen.
+- Optional: Internetzugang von Gladys zu GitHub für die Update-Prüfung.
+
+## Einrichtung
+
+1. Installiere die Integration in Gladys und öffne ihre
+   **Konfiguration**.
+2. Fülle **Vaultwarden-Adresse** aus: `https://vault.example.com` oder
+   `192.168.1.20:8080` für eine http-Adresse in deinem Netz. Läuft Vaultwarden
+   unter einem Unterpfad (`DOMAIN` endet auf `/vault`), gib ihn mit ein.
+3. Optional: Fülle **Admin-Token (optional)** aus, um die Kontenzahlen zu
+   erhalten.
+4. Drücke **Verbindung testen**: Es zeigt die Version, ob sie aktuell ist, und
+   die Konten.
+5. Füge im Tab **Entdecken** das Gerät **Vaultwarden** hinzu.
+
+Die weiteren Einstellungen:
+
+- **Selbstsigniertes Zertifikat akzeptieren**: nur für eine https-Adresse,
+  deren Zertifikat nicht von einer bekannten Stelle signiert ist.
+- **Nach Updates suchen** (standardmäßig an): vergleicht die installierte
+  Version mit der neuesten Veröffentlichung auf GitHub, alle 6 Stunden
+  gelesen (GitHub erlaubt 60 anonyme Anfragen pro Stunde).
+- **Aktualisierungsintervall**: wie oft der Server geprüft wird (30 s bis
+  15 min, standardmäßig 1 min). Eine Prüfung sind zwei kleine Anfragen:
+  `/alive` und `/api/version`.
+- **Sprache der Namen**: Sprache der Funktionsnamen und der Daten, beim
+  Hinzufügen des Geräts festgelegt.
+
+### Der Admin-Token
+
+Gib den Token **im Klartext** ein, so wie auf der Seite `/admin`. Enthält
+`ADMIN_TOKEN` einen Argon2-Hash (`$argon2id$…`), ist es das Passwort, das du
+gehasht hast, nicht der Hash.
+
+Mit dem Token meldet sich Gladys an der Admin-Seite an und liest die
+Kontenliste (`/admin/users`) höchstens alle 5 Minuten, wobei die Sitzung bis
+zu ihrem Ablauf erhalten bleibt. Es wird nur gezählt: Benutzer,
+Organisationen, offene Einladungen, deaktivierte Konten, letzte Aktivität.
+**Kein Tresorinhalt ist so lesbar**: Die Admin-Seite selbst sieht die
+Passwörter nie, sie werden auf deinen Geräten verschlüsselt.
+
+Ein abgelehnter Token wird erst wieder versucht, wenn du die Konfiguration
+änderst oder **Verbindung testen** drückst: Ein Werkzeug wie fail2ban
+überwacht diese Anmeldungen oft. Gladys bewahrt den Token wie jedes geheime
+Feld auf und schreibt ihn nie in die Protokolle.
+
+## Die Geräte
+
+Ein Gerät **Vaultwarden** mit:
+
+| Funktion            | Art   | Wann                                    |
+| ------------------- | ----- | --------------------------------------- |
+| Erreichbar          | 0 / 1 | immer                                   |
+| Antwortzeit         | ms    | solange erreichbar                      |
+| Version             | Text  | sobald gelesen                          |
+| Update verfügbar    | 0 / 1 | mit **Nach Updates suchen**             |
+| Neueste Version     | Text  | mit **Nach Updates suchen**             |
+| Benutzer            | Zahl  | mit dem Admin-Token (ohne Einladungen)  |
+| Organisationen      | Zahl  | mit dem Admin-Token                     |
+| Offene Einladungen  | Zahl  | mit dem Admin-Token                     |
+| Deaktivierte Konten | Zahl  | mit dem Admin-Token                     |
+| Letzte Aktivität    | Text  | mit dem Admin-Token (Datum und Uhrzeit) |
+
+Die Integration liest den Server mit einem eigenen Timer: Die Werte werden
+veröffentlicht, wenn sie sich ändern, und ohnehin alle 12 Stunden. Admin-Token
+hinzufügen oder entfernen oder die Update-Prüfung ein- oder ausschalten ändert
+die Funktionen: Gladys bietet dann im Tab Entdecken an, das Gerät zu
+**Aktualisieren**.
+
+## Dashboard
+
+Das Widget **Vaultwarden** zeigt in einer Liste: den Server (mit dem Namen,
+den du dem Gerät in Gladys gegeben hast) und seine Antwortzeit, oder **Nicht
+erreichbar** in Rot; die Version, als aktuell markiert oder mit der zu
+installierenden Version; und mit dem Admin-Token die Konten. Seine Einstellung
+**Konten anzeigen** blendet die Kontenzeilen aus.
+
+## Szenen
+
+### Auslöser
+
+- **Vaultwarden wird unerreichbar**: Der Server antwortet nicht mehr auf seine
+  Zustandsprüfung, nachdem er geantwortet hat. Variablen: der Servername, die
+  installierte Version.
+- **Vaultwarden ist wieder erreichbar**: Der Server antwortet wieder.
+  Variablen: der Servername, die installierte Version, die Ausfallzeit in
+  Minuten.
+- **Ein Vaultwarden-Update ist verfügbar**: Eine neuere Version als die
+  installierte erscheint auf GitHub, einmal pro Version. Variablen: der
+  Servername, die installierte Version, die neue Version, der Link zu ihren
+  Versionshinweisen. Eine Version, die beim Start der Integration schon
+  erschienen ist, zeigt **Update verfügbar** an, ohne den Auslöser.
+
+### Szenen-Ideen
+
+- Eine Nachricht senden, wenn der Passwort-Server nicht mehr antwortet, und
+  eine weitere mit der Ausfallzeit, wenn er zurückkommt.
+- Den Link zu den Versionshinweisen per Nachricht erhalten, wenn eine neue
+  Version erscheint.
+- **Offene Einladungen** in einer Bedingung nutzen, um an eine Einladung zu
+  erinnern, die niemand angenommen hat.
+
+## Fehlerbehebung
+
+- **„Vaultwarden antwortet nicht“**: Prüfe Adresse und Port und ob Gladys sie
+  erreicht (Firewall, `127.0.0.1` aus einem Container).
+- **„Kein Vaultwarden-Server unter dieser Adresse“**: Die Adresse führt zu
+  einem anderen Dienst (eine Seite des Reverse Proxy, ein anderer Port) oder
+  der Unterpfad fehlt.
+- **„Zertifikat abgelehnt“**: Wenn das Zertifikat deines ist, aktiviere
+  **Selbstsigniertes Zertifikat akzeptieren**.
+- **„Admin-Token abgelehnt“**: Gib den Token im Klartext ein, nicht seinen
+  Argon2-Hash.
+- **„Die Admin-Seite von Vaultwarden ist deaktiviert“**: Der Server hat kein
+  `ADMIN_TOKEN`, oder `DISABLE_ADMIN_TOKEN` versteckt sie hinter einem Proxy:
+  Lass den Token leer.
+- **„Zu viele Admin-Anmeldungen“**: Vaultwarden begrenzt die Anmeldungen an der
+  Admin-Seite (`ADMIN_RATELIMIT_*`); die Integration versucht es 5 Minuten
+  später erneut.
+
+## Grenzen
+
+- Ein Vaultwarden-Server pro Installation der Integration.
+- Die Admin-Seite kennt keinen Nur-Lese-Token: Mit dem Admin-Token, den du
+  Gladys gibst, ließe sich der Server verwalten. Lass ihn leer, wenn dich nur
+  Erreichbarkeit und Version interessieren.
+- Ist `DISABLE_ADMIN_TOKEN` gesetzt (Admin-Seite durch einen Proxy statt durch
+  einen Token geschützt), gibt es keine Kontenzahlen.
+- **Update verfügbar** vergleicht Versionsnummern: Ein `testing`-Image, das
+  nach der letzten Veröffentlichung gebaut wurde, gilt als diese Version.
+- Der Update-Auslöser wird nicht gespeichert: Eine Version, die erschienen
+  ist, während die Integration gestoppt war, zeigt **Update verfügbar** an,
+  ohne den Auslöser.
+- Nicht mit dem Vaultwarden-Projekt oder mit Bitwarden Inc. verbunden.
+  Bitwarden ist eine Marke von Bitwarden Inc.

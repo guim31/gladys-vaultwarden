@@ -1,8 +1,8 @@
 {
-  "name": "gladys-integration-template-js",
+  "name": "gladys-vaultwarden",
   "version": "1.0.0",
   "private": true,
-  "description": "Official starter template to build an external integration for Gladys Assistant with the JavaScript SDK.",
+  "description": "Gladys Assistant integration for Vaultwarden: availability, version, updates and accounts of your self-hosted server.",
   "type": "module",
   "main": "index.js",
   "scripts": {

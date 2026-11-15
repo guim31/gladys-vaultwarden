@@ -1,0 +1,30 @@
+{
+  "communication": null,
+  "environment": {
+    "api": "http://vw.example.test/api",
+    "cloudRegion": null,
+    "fillAssistRules": "https://fillassist.bitwarden.com",
+    "identity": "http://vw.example.test/identity",
+    "notifications": "http://vw.example.test/notifications",
+    "sso": "",
+    "vault": "http://vw.example.test"
+  },
+  "featureStates": {
+    "pm-19148-innovation-archive": true
+  },
+  "gitHash": "6ed6921c",
+  "object": "config",
+  "push": {
+    "pushTechnology": 0,
+    "vapidPublicKey": null
+  },
+  "server": {
+    "name": "Vaultwarden",
+    "url": "https://github.com/dani-garcia/vaultwarden"
+  },
+  "settings": {
+    "disableUserRegistration": false,
+    "suppressOnboardingInterstitials": false
+  },
+  "version": "2026.6.0"
+}
